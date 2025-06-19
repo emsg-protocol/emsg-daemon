@@ -3,18 +3,24 @@
 package main
 
 import (
+	"database/sql"
 	"encoding/json"
 	"net/http"
 )
 
+// API handler struct to hold DB reference
+type API struct {
+	db *sql.DB
+}
+
 // Example: GET /api/user?address=alice#emsg.dev
-func apiGetUser(w http.ResponseWriter, r *http.Request) {
+func (api *API) apiGetUser(w http.ResponseWriter, r *http.Request) {
 	address := r.URL.Query().Get("address")
 	if address == "" {
 		http.Error(w, "missing address", http.StatusBadRequest)
 		return
 	}
-	user, err := GetUser(db, address)
+	user, err := GetUser(api.db, address)
 	if err != nil {
 		http.Error(w, "user not found", http.StatusNotFound)
 		return
@@ -23,7 +29,7 @@ func apiGetUser(w http.ResponseWriter, r *http.Request) {
 }
 
 // Example: POST /api/user (register user with profile fields)
-func apiRegisterUser(w http.ResponseWriter, r *http.Request) {
+func (api *API) apiRegisterUser(w http.ResponseWriter, r *http.Request) {
 	var req struct {
 		Address        string `json:"address"`
 		PubKey         string `json:"pubkey"`
@@ -41,7 +47,7 @@ func apiRegisterUser(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	if err := StoreUser(db, user); err != nil {
+	if err := StoreUser(api.db, user); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}

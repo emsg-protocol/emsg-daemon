@@ -4,6 +4,8 @@ package main
 
 import (
 	"bytes"
+	"crypto/ed25519"
+	"encoding/base64"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -11,14 +13,15 @@ import (
 )
 
 func TestAPIRegisterAndGetUser(t *testing.T) {
-	// Setup in-memory DB and handler context as needed
-	// This is a simplified example; in production, use a test DB and proper setup/teardown
-	// Assume db is initialized and available globally
+	db, _ := InitDB(":memory:")
+	InitSchema(db)
+	api := &API{db: db}
 
-	// Register user
+	pub, _, _ := ed25519.GenerateKey(nil)
+	pubB64 := base64.StdEncoding.EncodeToString(pub)
 	userReq := map[string]string{
 		"address": "alice#emsg.dev",
-		"pubkey": "dGVzdHB1YmtleQ==", // base64 for 'testpubkey' (not a real Ed25519 key)
+		"pubkey": pubB64,
 		"first_name": "Alice",
 		"middle_name": "B.",
 		"last_name": "Smith",
@@ -27,15 +30,14 @@ func TestAPIRegisterAndGetUser(t *testing.T) {
 	body, _ := json.Marshal(userReq)
 	req := httptest.NewRequest("POST", "/api/user", bytes.NewReader(body))
 	w := httptest.NewRecorder()
-	apiRegisterUser(w, req)
+	api.apiRegisterUser(w, req)
 	if w.Code != http.StatusCreated {
 		t.Fatalf("expected 201 Created, got %d", w.Code)
 	}
 
-	// Retrieve user
 	getReq := httptest.NewRequest("GET", "/api/user?address=alice#emsg.dev", nil)
 	getW := httptest.NewRecorder()
-	apiGetUser(getW, getReq)
+	api.apiGetUser(getW, getReq)
 	if getW.Code != http.StatusOK {
 		t.Fatalf("expected 200 OK, got %d", getW.Code)
 	}

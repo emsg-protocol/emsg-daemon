@@ -5,7 +5,7 @@ package main
 import "testing"
 
 func TestGroupAddRemoveMember(t *testing.T) {
-	g := NewGroup("group1", []string{"alice#emsg.dev"})
+	g := NewGroup("group1", "Test Group", "desc", "http://img", []string{"alice#emsg.dev"})
 	if err := g.AddMember("bob#emsg.dev"); err != nil {
 		t.Errorf("AddMember failed: %v", err)
 	}

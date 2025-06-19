@@ -14,7 +14,7 @@ func LookupRoute(address string) (string, error) {
 	if len(parts) != 2 {
 		return "", fmt.Errorf("invalid address format: %s", address)
 	}
-	user, domain := parts[0], parts[1]
+	_, domain := parts[0], parts[1]
 	txtDomain := "_emsg." + domain
 	txts, err := net.LookupTXT(txtDomain)
 	if err != nil {
