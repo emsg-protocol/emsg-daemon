@@ -25,3 +25,30 @@ func TestGroupAddRemoveMember(t *testing.T) {
 		t.Error("expected error for non-existent member, got nil")
 	}
 }
+
+func TestGroupMetadataAndAdmin(t *testing.T) {
+	g := NewGroup("group1", "Test Group", "A test group", "http://img", []string{"alice#emsg.dev"})
+	if g.Name != "Test Group" || g.Description != "A test group" || g.DisplayPic != "http://img" {
+		t.Error("group metadata not set correctly")
+	}
+	g.AddAdmin("alice#emsg.dev")
+	if len(g.Admins) != 1 || g.Admins[0] != "alice#emsg.dev" {
+		t.Error("admin not added correctly")
+	}
+	g.UpdateName("Renamed Group")
+	if g.Name != "Renamed Group" {
+		t.Error("group name not updated")
+	}
+	g.UpdateDescription("Updated desc")
+	if g.Description != "Updated desc" {
+		t.Error("group description not updated")
+	}
+	g.UpdateDisplayPic("http://newimg")
+	if g.DisplayPic != "http://newimg" {
+		t.Error("group display picture not updated")
+	}
+	g.RemoveAdmin("alice#emsg.dev")
+	if len(g.Admins) != 0 {
+		t.Error("admin not removed correctly")
+	}
+}
