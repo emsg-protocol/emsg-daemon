@@ -1,21 +1,54 @@
 // auth.go
 // Key registration & signature verification for EMSG Daemon
-package main
+package auth
 
 import (
 	"crypto/ed25519"
-	"encoding/base64"
-	"errors"
 	"database/sql"
+	"encoding/base64"
+	"encoding/json"
+	"errors"
 )
 
 type User struct {
-	Address         string
-	PubKey          ed25519.PublicKey
-	FirstName       string // first_name
-	MiddleName      string // middle_name
-	LastName        string // last_name
-	DisplayPicture  string // display_picture (URL, IPFS hash, or CID)
+	Address        string            `json:"address"`
+	PubKey         ed25519.PublicKey `json:"-"` // Handle separately
+	FirstName      string            `json:"first_name"`
+	MiddleName     string            `json:"middle_name"`
+	LastName       string            `json:"last_name"`
+	DisplayPicture string            `json:"display_picture"`
+}
+
+// MarshalJSON custom JSON marshaling for User
+func (u User) MarshalJSON() ([]byte, error) {
+	type Alias User
+	return json.Marshal(&struct {
+		PubKey string `json:"pubkey"`
+		*Alias
+	}{
+		PubKey: base64.StdEncoding.EncodeToString(u.PubKey),
+		Alias:  (*Alias)(&u),
+	})
+}
+
+// UnmarshalJSON custom JSON unmarshaling for User
+func (u *User) UnmarshalJSON(data []byte) error {
+	type Alias User
+	aux := &struct {
+		PubKey string `json:"pubkey"`
+		*Alias
+	}{
+		Alias: (*Alias)(u),
+	}
+	if err := json.Unmarshal(data, &aux); err != nil {
+		return err
+	}
+	pubKey, err := base64.StdEncoding.DecodeString(aux.PubKey)
+	if err != nil {
+		return err
+	}
+	u.PubKey = ed25519.PublicKey(pubKey)
+	return nil
 }
 
 // RegisterUser registers a user's public key and profile fields

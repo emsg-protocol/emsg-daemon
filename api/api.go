@@ -1,26 +1,27 @@
 // api.go
 // Optional REST API for EMSG Daemon
-package main
+package api
 
 import (
 	"database/sql"
+	"emsg-daemon/internal/auth"
 	"encoding/json"
 	"net/http"
 )
 
 // API handler struct to hold DB reference
 type API struct {
-	db *sql.DB
+	DB *sql.DB
 }
 
 // Example: GET /api/user?address=alice#emsg.dev
-func (api *API) apiGetUser(w http.ResponseWriter, r *http.Request) {
+func (api *API) ApiGetUser(w http.ResponseWriter, r *http.Request) {
 	address := r.URL.Query().Get("address")
 	if address == "" {
 		http.Error(w, "missing address", http.StatusBadRequest)
 		return
 	}
-	user, err := GetUser(api.db, address)
+	user, err := auth.GetUser(api.DB, address)
 	if err != nil {
 		http.Error(w, "user not found", http.StatusNotFound)
 		return
@@ -29,7 +30,7 @@ func (api *API) apiGetUser(w http.ResponseWriter, r *http.Request) {
 }
 
 // Example: POST /api/user (register user with profile fields)
-func (api *API) apiRegisterUser(w http.ResponseWriter, r *http.Request) {
+func (api *API) ApiRegisterUser(w http.ResponseWriter, r *http.Request) {
 	var req struct {
 		Address        string `json:"address"`
 		PubKey         string `json:"pubkey"`
@@ -42,12 +43,12 @@ func (api *API) apiRegisterUser(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "invalid request", http.StatusBadRequest)
 		return
 	}
-	user, err := RegisterUser(req.Address, req.PubKey, req.FirstName, req.MiddleName, req.LastName, req.DisplayPicture)
+	user, err := auth.RegisterUser(req.Address, req.PubKey, req.FirstName, req.MiddleName, req.LastName, req.DisplayPicture)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	if err := StoreUser(api.db, user); err != nil {
+	if err := auth.StoreUser(api.DB, user); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -56,12 +57,12 @@ func (api *API) apiRegisterUser(w http.ResponseWriter, r *http.Request) {
 
 // StartServer starts the REST API server
 func StartServer(db *sql.DB) {
-	api := &API{db: db}
+	api := &API{DB: db}
 	http.HandleFunc("/api/user", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodGet {
-			api.apiGetUser(w, r)
+			api.ApiGetUser(w, r)
 		} else if r.Method == http.MethodPost {
-			api.apiRegisterUser(w, r)
+			api.ApiRegisterUser(w, r)
 		} else {
 			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 		}

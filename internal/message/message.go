@@ -1,10 +1,13 @@
 // message.go
 // Core message handling for EMSG Daemon
-package main
+package message
 
 import (
 	"encoding/base64"
 	"errors"
+
+	"emsg-daemon/internal/group"
+	"emsg-daemon/internal/auth"
 )
 
 type Message struct {
@@ -27,11 +30,11 @@ func (m *Message) Validate() error {
 // Verify checks the message signature using the sender's public key
 func (m *Message) Verify(pubKey []byte) bool {
 	// Use VerifySignature from auth.go
-	return VerifySignature(pubKey, []byte(m.Body), decodeBase64(m.Signature))
+	return auth.VerifySignature(pubKey, []byte(m.Body), decodeBase64(m.Signature))
 }
 
 // Deliver delivers the message to all recipients and group members
-func (m *Message) Deliver(groups map[string]*Group) ([]string, error) {
+func (m *Message) Deliver(groups map[string]*group.Group) ([]string, error) {
 	delivered := make(map[string]struct{})
 	for _, to := range m.To {
 		delivered[to] = struct{}{}

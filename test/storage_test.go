@@ -3,6 +3,7 @@
 package main
 
 import (
+	"emsg-daemon/internal/storage"
 	"os"
 	"testing"
 )
@@ -10,7 +11,7 @@ import (
 func TestInitDB(t *testing.T) {
 	dbFile := "test_emsg.db"
 	defer os.Remove(dbFile)
-	db, err := InitDB(dbFile)
+	db, err := storage.InitDB(dbFile)
 	if err != nil {
 		t.Fatalf("InitDB failed: %v", err)
 	}

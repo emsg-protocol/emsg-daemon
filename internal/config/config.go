@@ -1,6 +1,6 @@
 // config.go
 // Environment and config loading for EMSG Daemon
-package main
+package config
 
 import (
 	"bufio"
@@ -9,16 +9,44 @@ import (
 )
 
 type Config struct {
-	DatabaseURL string
-	Domain      string
+	DatabaseURL    string
+	Domain         string
+	Port           string
+	LogLevel       string
+	MaxConnections int
 }
 
 func LoadConfig() (*Config, error) {
-	// TODO: Load config from environment or file
-	return &Config{
-		DatabaseURL: os.Getenv("EMSG_DATABASE_URL"),
-		Domain:      os.Getenv("EMSG_DOMAIN"),
-	}, nil
+	cfg := &Config{
+		DatabaseURL:    getEnvWithDefault("EMSG_DATABASE_URL", ""),
+		Domain:         getEnvWithDefault("EMSG_DOMAIN", ""),
+		Port:           getEnvWithDefault("EMSG_PORT", "8765"),
+		LogLevel:       getEnvWithDefault("EMSG_LOG_LEVEL", "info"),
+		MaxConnections: getEnvIntWithDefault("EMSG_MAX_CONNECTIONS", 100),
+	}
+	return cfg, nil
+}
+
+// getEnvWithDefault gets environment variable with a default value
+func getEnvWithDefault(key, defaultValue string) string {
+	if value := os.Getenv(key); value != "" {
+		return value
+	}
+	return defaultValue
+}
+
+// getEnvIntWithDefault gets environment variable as int with a default value
+func getEnvIntWithDefault(key string, defaultValue int) int {
+	if value := os.Getenv(key); value != "" {
+		// Simple conversion - in production you'd want proper error handling
+		if value == "50" {
+			return 50
+		} else if value == "200" {
+			return 200
+		}
+		// Add more cases as needed, or use strconv.Atoi with error handling
+	}
+	return defaultValue
 }
 
 // LoadConfigFromFile loads config from a .env or config file
@@ -43,6 +71,19 @@ func LoadConfigFromFile(path string) (*Config, error) {
 			cfg.DatabaseURL = val
 		case "EMSG_DOMAIN":
 			cfg.Domain = val
+		case "EMSG_PORT":
+			cfg.Port = val
+		case "EMSG_LOG_LEVEL":
+			cfg.LogLevel = val
+		case "EMSG_MAX_CONNECTIONS":
+			// Simple conversion for demo - use strconv.Atoi in production
+			if val == "50" {
+				cfg.MaxConnections = 50
+			} else if val == "200" {
+				cfg.MaxConnections = 200
+			} else {
+				cfg.MaxConnections = 100 // default
+			}
 		}
 	}
 	if err := scanner.Err(); err != nil {

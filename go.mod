@@ -2,4 +2,6 @@ module emsg-daemon
 
 go 1.24.3
 
-require github.com/mattn/go-sqlite3 v1.14.28
+require go.etcd.io/bbolt v1.4.1
+
+require golang.org/x/sys v0.29.0 // indirect

@@ -2,10 +2,13 @@
 // Tests for group management
 package main
 
-import "testing"
+import (
+	"emsg-daemon/internal/group"
+	"testing"
+)
 
 func TestGroupAddRemoveMember(t *testing.T) {
-	g := NewGroup("group1", "Test Group", "desc", "http://img", []string{"alice#emsg.dev"})
+	g := group.NewGroup("group1", "Test Group", "desc", "http://img", []string{"alice#emsg.dev"})
 	if err := g.AddMember("bob#emsg.dev"); err != nil {
 		t.Errorf("AddMember failed: %v", err)
 	}
@@ -27,7 +30,7 @@ func TestGroupAddRemoveMember(t *testing.T) {
 }
 
 func TestGroupMetadataAndAdmin(t *testing.T) {
-	g := NewGroup("group1", "Test Group", "A test group", "http://img", []string{"alice#emsg.dev"})
+	g := group.NewGroup("group1", "Test Group", "A test group", "http://img", []string{"alice#emsg.dev"})
 	if g.Name != "Test Group" || g.Description != "A test group" || g.DisplayPic != "http://img" {
 		t.Error("group metadata not set correctly")
 	}

@@ -1,11 +1,14 @@
 // storage.go
 // SQLite/Postgres handling for EMSG Daemon
-package main
+package storage
 
 import (
 	"database/sql"
-	_ "github.com/mattn/go-sqlite3"
+	// _ "github.com/mattn/go-sqlite3" // Disabled for BoltDB version
 	"strings"
+
+	"emsg-daemon/internal/group"
+	"emsg-daemon/internal/message"
 )
 
 // TODO: Add functions for storing and retrieving messages and groups
@@ -15,22 +18,22 @@ func InitDB(dataSourceName string) (*sql.DB, error) {
 }
 
 // StoreMessage inserts a message into the database
-func StoreMessage(db *sql.DB, msg *Message) error {
+func StoreMessage(db *sql.DB, msg *message.Message) error {
 	_, err := db.Exec(`INSERT INTO messages (from_addr, to_addr, cc_addr, group_id, body, signature) VALUES (?, ?, ?, ?, ?, ?)`,
 		msg.From, strings.Join(msg.To, ","), strings.Join(msg.CC, ","), msg.GroupID, msg.Body, msg.Signature)
 	return err
 }
 
 // GetMessagesByUser retrieves messages for a user
-func GetMessagesByUser(db *sql.DB, user string) ([]Message, error) {
+func GetMessagesByUser(db *sql.DB, user string) ([]message.Message, error) {
 	rows, err := db.Query(`SELECT from_addr, to_addr, cc_addr, group_id, body, signature FROM messages WHERE to_addr LIKE ?`, "%"+user+"%")
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var msgs []Message
+	var msgs []message.Message
 	for rows.Next() {
-		var m Message
+		var m message.Message
 		var to, cc string
 		if err := rows.Scan(&m.From, &to, &cc, &m.GroupID, &m.Body, &m.Signature); err != nil {
 			return nil, err
@@ -43,26 +46,26 @@ func GetMessagesByUser(db *sql.DB, user string) ([]Message, error) {
 }
 
 // StoreGroup inserts a group into the database (with metadata and admins)
-func StoreGroup(db *sql.DB, group *Group) error {
+func StoreGroup(db *sql.DB, group *group.Group) error {
 	_, err := db.Exec(`INSERT OR REPLACE INTO groups (id, name, description, display_pic, members, admins) VALUES (?, ?, ?, ?, ?, ?)`,
 		group.ID, group.Name, group.Description, group.DisplayPic, strings.Join(group.Members, ","), strings.Join(group.Admins, ","))
 	return err
 }
 
 // GetGroup retrieves a group by ID (with metadata and admins)
-func GetGroup(db *sql.DB, id string) (*Group, error) {
+func GetGroup(db *sql.DB, id string) (*group.Group, error) {
 	row := db.QueryRow(`SELECT id, name, description, display_pic, members, admins FROM groups WHERE id = ?`, id)
 	var gid, name, desc, dp, members, admins string
 	if err := row.Scan(&gid, &name, &desc, &dp, &members, &admins); err != nil {
 		return nil, err
 	}
-	return &Group{
-		ID: gid,
-		Name: name,
+	return &group.Group{
+		ID:          gid,
+		Name:        name,
 		Description: desc,
-		DisplayPic: dp,
-		Members: strings.Split(members, ","),
-		Admins: strings.Split(admins, ","),
+		DisplayPic:  dp,
+		Members:     strings.Split(members, ","),
+		Admins:      strings.Split(admins, ","),
 	}, nil
 }
 
