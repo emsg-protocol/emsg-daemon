@@ -3,6 +3,7 @@
 package main
 
 import (
+	"emsg-daemon/internal/config"
 	"os"
 	"testing"
 )
@@ -10,7 +11,7 @@ import (
 func TestLoadConfig(t *testing.T) {
 	os.Setenv("EMSG_DATABASE_URL", "sqlite3://test.db")
 	os.Setenv("EMSG_DOMAIN", "testdomain.com")
-	cfg, err := LoadConfig()
+	cfg, err := config.LoadConfig()
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}

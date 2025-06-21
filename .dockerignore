@@ -1,0 +1,13 @@
+# Ignore Go build cache, binaries, and other unnecessary files
+/build
+/bin
+*.exe
+*.test
+*.out
+*.log
+vendor/
+.git
+.gitignore
+Dockerfile
+docs/
+*.md

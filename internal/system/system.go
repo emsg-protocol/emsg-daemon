@@ -1,11 +1,10 @@
 // system.go
 // Handles system-generated messages for EMSG Daemon
-package main
+package system
 
 import (
 	"database/sql"
 	"fmt"
-	"time"
 )
 
 // Expanded system message types

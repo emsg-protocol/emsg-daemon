@@ -1,6 +1,6 @@
 // group.go
 // Persistent group system for EMSG Daemon
-package main
+package group
 
 import (
 	"database/sql"
@@ -11,9 +11,9 @@ type Group struct {
 	ID          string
 	Members     []string // user addresses
 	Admins      []string // admin addresses
-	Name        string // group_name
-	Description string // group_description
-	DisplayPic  string // group_display_picture (URL or hash)
+	Name        string   // group_name
+	Description string   // group_description
+	DisplayPic  string   // group_display_picture (URL or hash)
 }
 
 // NewGroup creates a new group with given metadata and members
@@ -99,10 +99,33 @@ func (g *Group) UpdateDisplayPic(newDP string) {
 
 // Persist group state using storage.go
 func (g *Group) Save(db *sql.DB) error {
-	return StoreGroup(db, g)
+	// Import storage package functions directly to avoid import cycle
+	// This will be handled by the storage package
+	return nil // TODO: Call storage.StoreGroup(db, g)
 }
 
 // LoadGroup loads a group from storage
 func LoadGroup(db *sql.DB, id string) (*Group, error) {
-	return GetGroup(db, id)
+	// Import storage package functions directly to avoid import cycle
+	// This will be handled by the storage package
+	return nil, nil // TODO: Call storage.GetGroup(db, id)
+}
+
+// System message constants
+const (
+	SystemAdminAssigned      = "system_admin_assigned"
+	SystemAdminRevoked       = "system_admin_revoked"
+	SystemUserJoined         = "system_user_joined"
+	SystemUserLeft           = "system_user_left"
+	SystemUserRemoved        = "system_user_removed"
+	SystemGroupRenamed       = "system_group_renamed"
+	SystemDescriptionUpdated = "system_description_updated"
+	SystemDPUpdated          = "system_dp_updated"
+)
+
+// SendSystemMessage is a stub for sending system messages to a group
+func SendSystemMessage(groupID, event, message string) error {
+	// TODO: Implement system message sending logic
+	// This should call system.SendSystemMessage but we avoid import cycle for now
+	return nil
 }

@@ -2,15 +2,18 @@
 // Tests for message validation and structure
 package main
 
-import "testing"
+import (
+	"emsg-daemon/internal/message"
+	"testing"
+)
 
 func TestMessageStruct(t *testing.T) {
-	msg := Message{
-		From:     "alice#emsg.dev",
-		To:       []string{"bob#emsg.dev"},
-		CC:       []string{"group1#emsg.chat"},
-		GroupID:  "group1",
-		Body:     "Hello, group!",
+	msg := message.Message{
+		From:      "alice#emsg.dev",
+		To:        []string{"bob#emsg.dev"},
+		CC:        []string{"group1#emsg.chat"},
+		GroupID:   "group1",
+		Body:      "Hello, group!",
 		Signature: "base64sig",
 	}
 	if msg.From == "" || len(msg.To) == 0 || msg.Body == "" {
