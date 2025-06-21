@@ -21,6 +21,8 @@ A decentralized messaging daemon implementing the EMSG (Electronic Message) prot
 
 EMSG Daemon is a production-ready implementation of the EMSG protocol - a decentralized messaging system that uses DNS for service discovery and Ed25519 cryptographic signatures for authentication. Unlike traditional messaging systems that rely on centralized servers, EMSG enables direct server-to-server communication using DNS TXT records for routing.
 
+**Default Port**: The EMSG protocol uses **port 8765** as its default port, which is specifically chosen for this protocol and not commonly used by other services.
+
 ### Key Features
 
 - 🔐 **Ed25519 Cryptographic Authentication** - Secure message signing and verification
@@ -46,13 +48,13 @@ EMSG addresses follow the format: `user#domain.com`
 EMSG uses DNS TXT records at `_emsg.domain.com` for service discovery:
 
 ```dns
-_emsg.example.com. TXT "https://emsg.example.com:8080"
+_emsg.example.com. TXT "https://emsg.example.com:8765"
 ```
 
 Or with structured JSON:
 
 ```dns
-_emsg.example.com. TXT '{"server":"https://emsg.example.com:8080","version":"1.0","ttl":3600}'
+_emsg.example.com. TXT '{"server":"https://emsg.example.com:8765","version":"1.0","ttl":3600}'
 ```
 
 ### Message Format
@@ -154,12 +156,12 @@ go test ./test/...
 
 # Run with custom configuration
 export EMSG_DOMAIN="yourdomain.com"
-export EMSG_PORT="8080"
+export EMSG_PORT="8765"
 export EMSG_DATABASE_URL="./emsg.db"
 ./daemon
 ```
 
-The daemon will start on port 8080 (or your configured port) and create a BoltDB database file.
+The daemon will start on port 8765 (or your configured port) and create a BoltDB database file.
 
 ## Configuration
 
@@ -171,7 +173,7 @@ EMSG Daemon is configured via environment variables:
 |----------|---------|-------------|
 | `EMSG_DOMAIN` | `""` | Your domain name for EMSG service |
 | `EMSG_DATABASE_URL` | `""` | Path to BoltDB database file |
-| `EMSG_PORT` | `"8080"` | HTTP server port |
+| `EMSG_PORT` | `"8765"` | HTTP server port (EMSG protocol default) |
 | `EMSG_LOG_LEVEL` | `"info"` | Logging level (debug, info, warn, error) |
 | `EMSG_MAX_CONNECTIONS` | `100` | Maximum concurrent connections |
 
@@ -181,7 +183,7 @@ EMSG Daemon is configured via environment variables:
 ```bash
 export EMSG_DOMAIN="dev.emsg.local"
 export EMSG_DATABASE_URL="./dev_emsg.db"
-export EMSG_PORT="8080"
+export EMSG_PORT="8765"
 export EMSG_LOG_LEVEL="debug"
 ```
 
@@ -189,7 +191,7 @@ export EMSG_LOG_LEVEL="debug"
 ```bash
 export EMSG_DOMAIN="emsg.yourdomain.com"
 export EMSG_DATABASE_URL="/var/lib/emsg/emsg.db"
-export EMSG_PORT="8080"
+export EMSG_PORT="8765"
 export EMSG_LOG_LEVEL="info"
 export EMSG_MAX_CONNECTIONS="500"
 ```
@@ -198,12 +200,12 @@ export EMSG_MAX_CONNECTIONS="500"
 ```powershell
 $env:EMSG_DOMAIN="emsg.yourdomain.com"
 $env:EMSG_DATABASE_URL="C:\emsg\emsg.db"
-$env:EMSG_PORT="8080"
+$env:EMSG_PORT="8765"
 ```
 
 ## API Documentation
 
-The EMSG Daemon provides a comprehensive REST API for all operations. Base URL: `http://localhost:8080` (or your configured port).
+The EMSG Daemon provides a comprehensive REST API for all operations. Base URL: `http://localhost:8765` (or your configured port).
 
 ### User Management
 
@@ -350,7 +352,7 @@ GET /api/route?address=alice%23example.com
 **Response (200 OK):**
 ```json
 {
-  "server": "https://emsg.example.com:8080",
+  "server": "https://emsg.example.com:8765",
   "pubkey": "base64-encoded-domain-public-key",
   "version": "1.0",
   "ttl": 3600
@@ -406,8 +408,8 @@ Content-Type: application/json
 ```json
 {
   "routes": {
-    "https://emsg.example.com:8080": ["alice#example.com"],
-    "https://emsg.test.com:8080": ["bob#test.com"]
+    "https://emsg.example.com:8765": ["alice#example.com"],
+    "https://emsg.test.com:8765": ["bob#test.com"]
   }
 }
 ```
@@ -536,12 +538,12 @@ To enable EMSG for your domain, create a TXT record at `_emsg.yourdomain.com`:
 
 **Simple Format:**
 ```dns
-_emsg.example.com. 3600 IN TXT "https://emsg.example.com:8080"
+_emsg.example.com. 3600 IN TXT "https://emsg.example.com:8765"
 ```
 
 **Structured Format:**
 ```dns
-_emsg.example.com. 3600 IN TXT '{"server":"https://emsg.example.com:8080","version":"1.0","ttl":3600,"pubkey":"domain-public-key"}'
+_emsg.example.com. 3600 IN TXT '{"server":"https://emsg.example.com:8765","version":"1.0","ttl":3600,"pubkey":"domain-public-key"}'
 ```
 
 ### Routing Process
@@ -553,11 +555,11 @@ _emsg.example.com. 3600 IN TXT '{"server":"https://emsg.example.com:8080","versi
 
 ### Example DNS Configuration
 
-For domain `example.com` running EMSG on `emsg.example.com:8080`:
+For domain `example.com` running EMSG on `emsg.example.com:8765`:
 
 ```dns
 ; EMSG service discovery
-_emsg.example.com. 3600 IN TXT "https://emsg.example.com:8080"
+_emsg.example.com. 3600 IN TXT "https://emsg.example.com:8765"
 
 ; Optional: Domain public key for verification
 _emsg.example.com. 3600 IN TXT "pubkey=base64-encoded-ed25519-public-key"
@@ -570,8 +572,8 @@ The daemon automatically handles routing for outbound messages:
 ```go
 // Example: Sending to alice#example.com
 // 1. Lookup _emsg.example.com TXT record
-// 2. Parse server URL: https://emsg.example.com:8080
-// 3. POST message to https://emsg.example.com:8080/api/message
+// 2. Parse server URL: https://emsg.example.com:8765
+// 3. POST message to https://emsg.example.com:8765/api/message
 ```
 
 ## Database Schema
@@ -718,15 +720,15 @@ go run test_final_integration.go
 ./daemon
 
 # Test user registration
-curl -X POST http://localhost:8080/api/user \
+curl -X POST http://localhost:8765/api/user \
   -H "Content-Type: application/json" \
   -d '{"address":"test#example.com","pubkey":"...","first_name":"Test"}'
 
 # Test user retrieval
-curl "http://localhost:8080/api/user?address=test%23example.com"
+curl "http://localhost:8765/api/user?address=test%23example.com"
 
 # Test address validation
-curl -X POST http://localhost:8080/api/route/validate \
+curl -X POST http://localhost:8765/api/route/validate \
   -H "Content-Type: application/json" \
   -d '{"addresses":["test#example.com","invalid"]}'
 ```
@@ -738,7 +740,7 @@ curl -X POST http://localhost:8080/api/route/validate \
 - **OS**: Linux, macOS, Windows
 - **Memory**: 512MB RAM minimum, 2GB recommended
 - **Storage**: 1GB minimum for database and logs
-- **Network**: Port 8080 (or configured port) accessible
+- **Network**: Port 8765 (or configured port) accessible
 - **DNS**: TXT record at `_emsg.yourdomain.com`
 
 ### Deployment Steps
@@ -752,7 +754,7 @@ curl -X POST http://localhost:8080/api/route/validate \
    ```bash
    export EMSG_DOMAIN="emsg.yourdomain.com"
    export EMSG_DATABASE_URL="/var/lib/emsg/emsg.db"
-   export EMSG_PORT="8080"
+   export EMSG_PORT="8765"
    export EMSG_LOG_LEVEL="info"
    export EMSG_MAX_CONNECTIONS="1000"
    ```
@@ -765,7 +767,7 @@ curl -X POST http://localhost:8080/api/route/validate \
 
 4. **Configure DNS**
    ```dns
-   _emsg.yourdomain.com. 3600 IN TXT "https://emsg.yourdomain.com:8080"
+   _emsg.yourdomain.com. 3600 IN TXT "https://emsg.yourdomain.com:8765"
    ```
 
 5. **Start the Service**
@@ -790,7 +792,7 @@ WorkingDirectory=/opt/emsg
 ExecStart=/opt/emsg/emsg-daemon
 Environment=EMSG_DOMAIN=emsg.yourdomain.com
 Environment=EMSG_DATABASE_URL=/var/lib/emsg/emsg.db
-Environment=EMSG_PORT=8080
+Environment=EMSG_PORT=8765
 Environment=EMSG_LOG_LEVEL=info
 Restart=always
 RestartSec=5
@@ -818,7 +820,7 @@ FROM alpine:latest
 RUN apk --no-cache add ca-certificates
 WORKDIR /root/
 COPY --from=builder /app/emsg-daemon .
-EXPOSE 8080
+EXPOSE 8765
 CMD ["./emsg-daemon"]
 ```
 
@@ -826,7 +828,7 @@ Build and run:
 ```bash
 docker build -t emsg-daemon .
 docker run -d \
-  -p 8080:8080 \
+  -p 8765:8765 \
   -e EMSG_DOMAIN=emsg.yourdomain.com \
   -e EMSG_DATABASE_URL=/data/emsg.db \
   -v /var/lib/emsg:/data \
@@ -841,7 +843,7 @@ server {
     server_name emsg.yourdomain.com;
 
     location / {
-        proxy_pass http://localhost:8080;
+        proxy_pass http://localhost:8765;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
@@ -875,7 +877,7 @@ sudo crontab -e
 
 ### Security Considerations
 
-- **Firewall**: Only expose necessary ports (80, 443, 8080)
+- **Firewall**: Only expose necessary ports (80, 443, 8765)
 - **User Permissions**: Run daemon as non-root user
 - **Database Security**: Protect database file permissions
 - **DNS Security**: Use DNSSEC for TXT records
