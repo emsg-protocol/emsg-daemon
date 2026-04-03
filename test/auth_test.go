@@ -15,7 +15,7 @@ func TestRegisterUserAndVerifySignature(t *testing.T) {
 		t.Fatalf("failed to generate key: %v", err)
 	}
 	pubB64 := base64.StdEncoding.EncodeToString(pub)
-	user, err := auth.RegisterUser("alice#emsg.dev", pubB64, "Alice", "B.", "Smith", "http://img/alice.png")
+	user, err := auth.RegisterUser("alice#emsg.dev", pubB64, "Alice", "B.", "Smith", "http://img/alice.png", "key", "", "", "")
 	if err != nil {
 		t.Fatalf("RegisterUser failed: %v", err)
 	}

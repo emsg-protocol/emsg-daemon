@@ -11,12 +11,16 @@ import (
 )
 
 type User struct {
-	Address        string            `json:"address"`
-	PubKey         ed25519.PublicKey `json:"-"` // Handle separately
-	FirstName      string            `json:"first_name"`
-	MiddleName     string            `json:"middle_name"`
-	LastName       string            `json:"last_name"`
-	DisplayPicture string            `json:"display_picture"`
+	Address             string            `json:"address"`
+	PubKey              ed25519.PublicKey `json:"-"` // Handle separately
+	FirstName           string            `json:"first_name"`
+	MiddleName          string            `json:"middle_name"`
+	LastName            string            `json:"last_name"`
+	DisplayPicture      string            `json:"display_picture"`
+	AuthMode            string            `json:"auth_mode"`
+	EncryptedPrivateKey string            `json:"encrypted_private_key"`
+	Salt                string            `json:"salt"`
+	IV                  string            `json:"iv"`
 }
 
 // MarshalJSON custom JSON marshaling for User
@@ -52,7 +56,7 @@ func (u *User) UnmarshalJSON(data []byte) error {
 }
 
 // RegisterUser registers a user's public key and profile fields
-func RegisterUser(address, pubKeyBase64, firstName, middleName, lastName, displayPicture string) (*User, error) {
+func RegisterUser(address, pubKeyBase64, firstName, middleName, lastName, displayPicture, authMode, encryptedPrivateKey, salt, iv string) (*User, error) {
 	pubKey, err := base64.StdEncoding.DecodeString(pubKeyBase64)
 	if err != nil {
 		return nil, err
@@ -61,12 +65,16 @@ func RegisterUser(address, pubKeyBase64, firstName, middleName, lastName, displa
 		return nil, errors.New("invalid public key size")
 	}
 	return &User{
-		Address:        address,
-		PubKey:         ed25519.PublicKey(pubKey),
-		FirstName:      firstName,
-		MiddleName:     middleName,
-		LastName:       lastName,
-		DisplayPicture: displayPicture,
+		Address:             address,
+		PubKey:              ed25519.PublicKey(pubKey),
+		FirstName:           firstName,
+		MiddleName:          middleName,
+		LastName:            lastName,
+		DisplayPicture:      displayPicture,
+		AuthMode:            authMode,
+		EncryptedPrivateKey: encryptedPrivateKey,
+		Salt:                salt,
+		IV:                  iv,
 	}, nil
 }
 

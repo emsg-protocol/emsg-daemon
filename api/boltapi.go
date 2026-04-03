@@ -45,18 +45,47 @@ func (api *BoltAPI) ApiGetUser(w http.ResponseWriter, r *http.Request) {
 // Example: POST /api/user (register user with profile fields)
 func (api *BoltAPI) ApiRegisterUser(w http.ResponseWriter, r *http.Request) {
 	var req struct {
-		Address        string `json:"address"`
-		PubKey         string `json:"pubkey"`
-		FirstName      string `json:"first_name"`
-		MiddleName     string `json:"middle_name"`
-		LastName       string `json:"last_name"`
-		DisplayPicture string `json:"display_picture"`
+		Address             string `json:"address"`
+		PubKey              string `json:"pubkey"`
+		FirstName           string `json:"first_name"`
+		MiddleName          string `json:"middle_name"`
+		LastName            string `json:"last_name"`
+		DisplayPicture      string `json:"display_picture"`
+		AuthMode            string `json:"auth_mode"`
+		EncryptedPrivateKey string `json:"encrypted_private_key"`
+		Salt                string `json:"salt"`
+		IV                  string `json:"iv"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "invalid request", http.StatusBadRequest)
 		return
 	}
-	user, err := auth.RegisterUser(req.Address, req.PubKey, req.FirstName, req.MiddleName, req.LastName, req.DisplayPicture)
+
+	// Default auth_mode to "key" for backward compatibility
+	if req.AuthMode == "" {
+		req.AuthMode = "key"
+	}
+
+	// Validate password mode requires blob fields
+	if req.AuthMode == "password" {
+		if req.EncryptedPrivateKey == "" || req.Salt == "" || req.IV == "" {
+			http.Error(w, "encrypted_private_key, salt, and iv are required for password auth mode", http.StatusBadRequest)
+			return
+		}
+	} else {
+		// key mode: ignore blob fields
+		req.EncryptedPrivateKey = ""
+		req.Salt = ""
+		req.IV = ""
+	}
+
+	// Check for duplicate address
+	if _, err := storage.GetUserBolt(api.DB, req.Address); err == nil {
+		http.Error(w, "address already registered", http.StatusConflict)
+		return
+	}
+
+	user, err := auth.RegisterUser(req.Address, req.PubKey, req.FirstName, req.MiddleName, req.LastName, req.DisplayPicture, req.AuthMode, req.EncryptedPrivateKey, req.Salt, req.IV)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -224,6 +253,83 @@ func (api *BoltAPI) ApiValidateAddresses(w http.ResponseWriter, r *http.Request)
 	})
 }
 
+// GET /api/user/auth-info?address=... (public, no auth required)
+func (api *BoltAPI) ApiGetAuthInfo(w http.ResponseWriter, r *http.Request) {
+	address := r.URL.Query().Get("address")
+	if address == "" {
+		http.Error(w, "missing address", http.StatusBadRequest)
+		return
+	}
+	decodedAddress, err := url.QueryUnescape(address)
+	if err != nil {
+		decodedAddress = address
+	}
+	user, err := storage.GetUserBolt(api.DB, decodedAddress)
+	if err != nil {
+		http.Error(w, "user not found", http.StatusNotFound)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if user.AuthMode == "password" {
+		json.NewEncoder(w).Encode(map[string]string{
+			"auth_mode":             "password",
+			"encrypted_private_key": user.EncryptedPrivateKey,
+			"salt":                  user.Salt,
+			"iv":                    user.IV,
+		})
+	} else {
+		json.NewEncoder(w).Encode(map[string]string{
+			"auth_mode": "key",
+		})
+	}
+}
+
+// PUT /api/user/encrypted-key (protected via RequireAuth middleware)
+func (api *BoltAPI) ApiUpdateEncryptedKey(w http.ResponseWriter, r *http.Request) {
+	var req struct {
+		Address             string `json:"address"`
+		AuthMode            string `json:"auth_mode"`
+		EncryptedPrivateKey string `json:"encrypted_private_key"`
+		Salt                string `json:"salt"`
+		IV                  string `json:"iv"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "invalid request", http.StatusBadRequest)
+		return
+	}
+
+	authedUser := r.Header.Get("X-EMSG-User")
+	if authedUser != req.Address {
+		http.Error(w, "forbidden: address mismatch", http.StatusForbidden)
+		return
+	}
+
+	user, err := storage.GetUserBolt(api.DB, req.Address)
+	if err != nil {
+		http.Error(w, "user not found", http.StatusNotFound)
+		return
+	}
+
+	user.AuthMode = req.AuthMode
+	if req.AuthMode == "password" {
+		user.EncryptedPrivateKey = req.EncryptedPrivateKey
+		user.Salt = req.Salt
+		user.IV = req.IV
+	} else {
+		user.EncryptedPrivateKey = ""
+		user.Salt = ""
+		user.IV = ""
+	}
+
+	if err := storage.StoreUserBolt(api.DB, user); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]string{"status": "updated"})
+}
+
 // POST /api/route/message (determine routing for a message)
 func (api *BoltAPI) ApiRouteMessage(w http.ResponseWriter, r *http.Request) {
 	var req struct {
@@ -289,6 +395,24 @@ func StartBoltServer(db *bbolt.DB, port string) {
 			api.ApiGetGroup(w, r) // Public - no auth required
 		} else if r.Method == http.MethodPost {
 			auth.RequireAuth(api.ApiCreateGroup)(w, r) // Protected
+		} else {
+			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		}
+	})
+
+	// Auth-info endpoint (public)
+	http.HandleFunc("/api/user/auth-info", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodGet {
+			api.ApiGetAuthInfo(w, r)
+		} else {
+			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		}
+	})
+
+	// Encrypted-key update endpoint (protected)
+	http.HandleFunc("/api/user/encrypted-key", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodPut {
+			auth.RequireAuth(api.ApiUpdateEncryptedKey)(w, r)
 		} else {
 			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 		}

@@ -919,3 +919,110 @@ For questions and support:
 ---
 
 **EMSG Daemon** - Decentralized messaging for the modern web.
+
+## Password Authentication API
+
+### `GET /api/user/auth-info?address={address}`
+
+Public endpoint — no authentication required. Returns the authentication metadata for a registered address. Used by clients to determine the login mode and retrieve the encrypted blob for client-side decryption.
+
+**Request:**
+```http
+GET /api/user/auth-info?address=alice%23example.com
+```
+
+**Response — Mode A (password):**
+```json
+{
+  "auth_mode": "password",
+  "encrypted_private_key": "<base64 AES-GCM ciphertext>",
+  "salt": "<base64 16-byte PBKDF2 salt>",
+  "iv": "<base64 12-byte AES-GCM IV>"
+}
+```
+
+**Response — Mode B (key):**
+```json
+{
+  "auth_mode": "key"
+}
+```
+
+**Response — address not found (HTTP 404):**
+```json
+{
+  "error": "not found"
+}
+```
+
+---
+
+### `PUT /api/user/encrypted-key`
+
+Authenticated endpoint — requires a valid EMSG `Authorization` header. Updates or clears the encrypted private key blob for the authenticated user. Used for change-password and mode-switch flows.
+
+The `address` field in the request body must match the address authenticated via the `Authorization` header; a mismatch returns HTTP 403.
+
+**Request:**
+```http
+PUT /api/user/encrypted-key
+Content-Type: application/json
+Authorization: EMSG <base64-encoded-auth-request>
+
+{
+  "address": "alice#example.com",
+  "auth_mode": "password",
+  "encrypted_private_key": "<base64 AES-GCM ciphertext>",
+  "salt": "<base64 16-byte salt>",
+  "iv": "<base64 12-byte IV>"
+}
+```
+
+**Response (200 OK):**
+```json
+{}
+```
+
+**Response — address mismatch (HTTP 403):**
+```json
+{
+  "error": "forbidden"
+}
+```
+
+When `auth_mode` is `"key"`, the `encrypted_private_key`, `salt`, and `iv` fields are cleared on the stored user record (set to empty strings).
+
+---
+
+### Updated `POST /api/user` Registration Payload
+
+The registration endpoint now accepts optional password-authentication fields:
+
+```http
+POST /api/user
+Content-Type: application/json
+
+{
+  "address": "alice#example.com",
+  "pubkey": "<base64 Ed25519 public key>",
+  "first_name": "Alice",
+  "middle_name": "",
+  "last_name": "Smith",
+  "display_picture": "",
+  "auth_mode": "password",
+  "encrypted_private_key": "<base64 AES-GCM ciphertext>",
+  "salt": "<base64 16-byte salt>",
+  "iv": "<base64 12-byte IV>"
+}
+```
+
+- `auth_mode` defaults to `"key"` when omitted (backward compatible).
+- When `auth_mode` is `"key"`, the blob fields are ignored even if provided.
+- When `auth_mode` is `"password"`, all three blob fields are stored.
+- Returns HTTP 409 if the address is already registered.
+
+---
+
+### Security Note
+
+The daemon never stores or logs plaintext private keys. The `encrypted_private_key` field is an opaque base64 blob that can only be decrypted by the client using the user's password. The daemon has no access to the password and cannot recover the private key from the stored blob.

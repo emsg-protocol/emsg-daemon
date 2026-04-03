@@ -43,7 +43,7 @@ func (api *API) ApiRegisterUser(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "invalid request", http.StatusBadRequest)
 		return
 	}
-	user, err := auth.RegisterUser(req.Address, req.PubKey, req.FirstName, req.MiddleName, req.LastName, req.DisplayPicture)
+	user, err := auth.RegisterUser(req.Address, req.PubKey, req.FirstName, req.MiddleName, req.LastName, req.DisplayPicture, "", "", "", "")
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return

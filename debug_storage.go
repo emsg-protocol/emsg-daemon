@@ -29,7 +29,7 @@ func main() {
 	}
 	pubKeyB64 := base64.StdEncoding.EncodeToString(pubKey)
 
-	user, err := auth.RegisterUser("alice#emsg.dev", pubKeyB64, "Alice", "B.", "Smith", "https://example.com/alice.jpg")
+	user, err := auth.RegisterUser("alice#emsg.dev", pubKeyB64, "Alice", "B.", "Smith", "https://example.com/alice.jpg", "key", "", "", "")
 	if err != nil {
 		log.Fatalf("Failed to register user: %v", err)
 	}
