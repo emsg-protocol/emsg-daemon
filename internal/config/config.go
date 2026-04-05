@@ -31,10 +31,12 @@ func binaryDir() string {
 
 func LoadConfig() (*Config, error) {
 	dir := binaryDir()
+	// Render (and many PaaS platforms) inject PORT; fall back to EMSG_PORT then 8765.
+	port := getEnvWithDefault("PORT", getEnvWithDefault("EMSG_PORT", "8765"))
 	cfg := &Config{
 		DatabaseURL:    getEnvWithDefault("EMSG_DATABASE_URL", ""),
 		Domain:         getEnvWithDefault("EMSG_DOMAIN", ""),
-		Port:           getEnvWithDefault("EMSG_PORT", "8765"),
+		Port:           port,
 		LogLevel:       getEnvWithDefault("EMSG_LOG_LEVEL", "info"),
 		MaxConnections: getEnvIntWithDefault("EMSG_MAX_CONNECTIONS", 100),
 		WWWDir:         getEnvWithDefault("EMSG_WWW_DIR", filepath.Join(dir, "www")),
