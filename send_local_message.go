@@ -1,3 +1,4 @@
+//go:build ignore
 // send_local_message.go
 // Send a message within sandipwalke.com domain
 package main

@@ -1,3 +1,4 @@
+//go:build ignore
 // test_emsg_subdomain.go
 // Test emsg.sandipwalke.com subdomain
 package main

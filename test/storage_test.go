@@ -4,16 +4,15 @@ package main
 
 import (
 	"emsg-daemon/internal/storage"
-	"os"
+	"path/filepath"
 	"testing"
 )
 
 func TestInitDB(t *testing.T) {
-	dbFile := "test_emsg.db"
-	defer os.Remove(dbFile)
-	db, err := storage.InitDB(dbFile)
+	dbPath := filepath.Join(t.TempDir(), "test_emsg.db")
+	db, err := storage.InitBoltDB(dbPath)
 	if err != nil {
-		t.Fatalf("InitDB failed: %v", err)
+		t.Fatalf("InitBoltDB failed: %v", err)
 	}
 	if db == nil {
 		t.Error("expected db instance, got nil")

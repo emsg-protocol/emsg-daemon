@@ -1,3 +1,4 @@
+//go:build ignore
 // test_sandipwalke_domain.go
 // Test EMSG setup for sandipwalke.com domain
 package main

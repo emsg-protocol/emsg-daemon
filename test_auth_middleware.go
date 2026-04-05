@@ -1,3 +1,4 @@
+//go:build ignore
 // test_auth_middleware.go
 // Test authentication middleware functionality
 package main

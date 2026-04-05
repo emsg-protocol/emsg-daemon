@@ -1,3 +1,4 @@
+//go:build ignore
 // send_emsg_message.go
 // Send EMSG messages with proper authentication
 package main

@@ -49,7 +49,7 @@ func main() {
 				log.Printf("REST API server crashed: %v", r)
 			}
 		}()
-		api.StartBoltServer(db, cfg.Port)
+		api.StartBoltServer(db, cfg.Port, cfg.WWWDir)
 	}()
 
 	fmt.Println("EMSG Daemon is running. Press Ctrl+C to stop.")

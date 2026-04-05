@@ -1,3 +1,4 @@
+//go:build ignore
 // test_port_8765_comprehensive.go
 // Comprehensive test of EMSG Daemon on port 8765
 package main

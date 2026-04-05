@@ -1,0 +1,10 @@
+# 2026/04/05 17:59:07.653059 [TestProperty2_HealthEndpointResponsiveness] [rapid] draw port: 1122
+# 2026/04/05 17:59:07.653059 [TestProperty2_HealthEndpointResponsiveness] [rapid] draw logLevel: "info"
+# 2026/04/05 17:59:07.654184 [TestProperty2_HealthEndpointResponsiveness] health request failed: Get "http://127.0.0.1:57902/api/user?address=health": EOF
+# 
+v0.4.8#717890907691101419
+0x13ca0f59e767d7
+0xf9195910c76ad
+0x62
+0xb0b7648b80b0f
+0x0

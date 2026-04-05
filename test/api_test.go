@@ -12,13 +12,23 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"path/filepath"
 	"testing"
 )
 
 func TestAPIRegisterAndGetUser(t *testing.T) {
-	db, _ := storage.InitDB(":memory:")
-	storage.InitSchema(db)
-	apiHandler := &api.API{DB: db}
+	// Use a temp BoltDB file
+	tmpDir := t.TempDir()
+	dbPath := filepath.Join(tmpDir, "test.db")
+	db, err := storage.InitBoltDB(dbPath)
+	if err != nil {
+		t.Fatalf("InitBoltDB failed: %v", err)
+	}
+	defer db.Close()
+	defer os.Remove(dbPath)
+
+	apiHandler := &api.BoltAPI{DB: db}
 
 	pub, _, _ := ed25519.GenerateKey(nil)
 	pubB64 := base64.StdEncoding.EncodeToString(pub)
@@ -38,7 +48,7 @@ func TestAPIRegisterAndGetUser(t *testing.T) {
 		t.Fatalf("expected 201 Created, got %d. Response: %s", w.Code, w.Body.String())
 	}
 
-	getReq := httptest.NewRequest("GET", "/api/user?address=alice#emsg.dev", nil)
+	getReq := httptest.NewRequest("GET", "/api/user?address=alice%23emsg.dev", nil)
 	getW := httptest.NewRecorder()
 	apiHandler.ApiGetUser(getW, getReq)
 	if getW.Code != http.StatusOK {

@@ -1,3 +1,4 @@
+//go:build ignore
 // simple_test.go
 // Simple test for message and group endpoints
 package main

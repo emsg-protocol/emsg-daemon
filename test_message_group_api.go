@@ -1,3 +1,4 @@
+//go:build ignore
 // test_message_group_api.go
 // Test script for EMSG Daemon Message and Group API endpoints
 package main

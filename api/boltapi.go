@@ -358,11 +358,13 @@ func (api *BoltAPI) ApiRouteMessage(w http.ResponseWriter, r *http.Request) {
 }
 
 // StartBoltServer starts the REST API server with BoltDB
-func StartBoltServer(db *bbolt.DB, port string) {
+func StartBoltServer(db *bbolt.DB, port string, wwwDir string) {
 	api := &BoltAPI{DB: db}
 	auth := &AuthMiddleware{DB: db}
+	mux := http.NewServeMux()
+
 	// User endpoints
-	http.HandleFunc("/api/user", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/api/user", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodGet {
 			api.ApiGetUser(w, r)
 		} else if r.Method == http.MethodPost {
@@ -373,7 +375,7 @@ func StartBoltServer(db *bbolt.DB, port string) {
 	})
 
 	// Message endpoints (protected - requires authentication)
-	http.HandleFunc("/api/message", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/api/message", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodPost {
 			auth.RequireAuth(api.ApiSendMessage)(w, r)
 		} else {
@@ -381,7 +383,7 @@ func StartBoltServer(db *bbolt.DB, port string) {
 		}
 	})
 
-	http.HandleFunc("/api/messages", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/api/messages", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodGet {
 			auth.RequireAuth(api.ApiGetMessages)(w, r)
 		} else {
@@ -390,7 +392,7 @@ func StartBoltServer(db *bbolt.DB, port string) {
 	})
 
 	// Group endpoints
-	http.HandleFunc("/api/group", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/api/group", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodGet {
 			api.ApiGetGroup(w, r) // Public - no auth required
 		} else if r.Method == http.MethodPost {
@@ -401,7 +403,7 @@ func StartBoltServer(db *bbolt.DB, port string) {
 	})
 
 	// Auth-info endpoint (public)
-	http.HandleFunc("/api/user/auth-info", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/api/user/auth-info", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodGet {
 			api.ApiGetAuthInfo(w, r)
 		} else {
@@ -410,7 +412,7 @@ func StartBoltServer(db *bbolt.DB, port string) {
 	})
 
 	// Encrypted-key update endpoint (protected)
-	http.HandleFunc("/api/user/encrypted-key", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/api/user/encrypted-key", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodPut {
 			auth.RequireAuth(api.ApiUpdateEncryptedKey)(w, r)
 		} else {
@@ -419,7 +421,7 @@ func StartBoltServer(db *bbolt.DB, port string) {
 	})
 
 	// DNS Routing endpoints
-	http.HandleFunc("/api/route", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/api/route", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodGet {
 			api.ApiGetRoute(w, r)
 		} else {
@@ -427,7 +429,7 @@ func StartBoltServer(db *bbolt.DB, port string) {
 		}
 	})
 
-	http.HandleFunc("/api/route/validate", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/api/route/validate", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodPost {
 			api.ApiValidateAddresses(w, r)
 		} else {
@@ -435,7 +437,7 @@ func StartBoltServer(db *bbolt.DB, port string) {
 		}
 	})
 
-	http.HandleFunc("/api/route/message", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/api/route/message", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodPost {
 			api.ApiRouteMessage(w, r)
 		} else {
@@ -443,5 +445,8 @@ func StartBoltServer(db *bbolt.DB, port string) {
 		}
 	})
 
-	go http.ListenAndServe(":"+port, nil)
+	// Register static asset routes after all /api/* routes
+	ServeStaticAssets(mux, wwwDir)
+
+	go http.ListenAndServe(":"+port, mux)
 }

@@ -1,3 +1,4 @@
+//go:build ignore
 // test_dns_api.go
 // Test DNS routing API endpoints
 package main

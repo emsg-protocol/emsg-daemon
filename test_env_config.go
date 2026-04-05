@@ -1,3 +1,4 @@
+//go:build ignore
 // test_env_config.go
 // Test environment variable configuration
 package main

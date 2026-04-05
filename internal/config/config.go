@@ -5,6 +5,8 @@ package config
 import (
 	"bufio"
 	"os"
+	"path/filepath"
+	"strconv"
 	"strings"
 )
 
@@ -14,15 +16,29 @@ type Config struct {
 	Port           string
 	LogLevel       string
 	MaxConnections int
+	WWWDir         string
+	LogFile        string
+}
+
+// binaryDir returns the directory containing the running binary.
+func binaryDir() string {
+	exe, err := os.Executable()
+	if err != nil {
+		return "."
+	}
+	return filepath.Dir(exe)
 }
 
 func LoadConfig() (*Config, error) {
+	dir := binaryDir()
 	cfg := &Config{
 		DatabaseURL:    getEnvWithDefault("EMSG_DATABASE_URL", ""),
 		Domain:         getEnvWithDefault("EMSG_DOMAIN", ""),
 		Port:           getEnvWithDefault("EMSG_PORT", "8765"),
 		LogLevel:       getEnvWithDefault("EMSG_LOG_LEVEL", "info"),
 		MaxConnections: getEnvIntWithDefault("EMSG_MAX_CONNECTIONS", 100),
+		WWWDir:         getEnvWithDefault("EMSG_WWW_DIR", filepath.Join(dir, "www")),
+		LogFile:        getEnvWithDefault("EMSG_LOG_FILE", filepath.Join(dir, "emsg.log")),
 	}
 	return cfg, nil
 }
@@ -38,25 +54,34 @@ func getEnvWithDefault(key, defaultValue string) string {
 // getEnvIntWithDefault gets environment variable as int with a default value
 func getEnvIntWithDefault(key string, defaultValue int) int {
 	if value := os.Getenv(key); value != "" {
-		// Simple conversion - in production you'd want proper error handling
-		if value == "50" {
-			return 50
-		} else if value == "200" {
-			return 200
+		if n, err := strconv.Atoi(value); err == nil {
+			return n
 		}
-		// Add more cases as needed, or use strconv.Atoi with error handling
 	}
 	return defaultValue
 }
 
-// LoadConfigFromFile loads config from a .env or config file
+// LoadConfigFromFile loads config from a .env or config file.
+// Returns an error if the file cannot be opened (e.g. absent), so the caller
+// can log a warning and fall back to defaults.
 func LoadConfigFromFile(path string) (*Config, error) {
 	file, err := os.Open(path)
 	if err != nil {
 		return nil, err
 	}
 	defer file.Close()
-	cfg := &Config{}
+
+	dir := binaryDir()
+	cfg := &Config{
+		// Pre-populate with binary-relative defaults so partial config files
+		// still produce a fully-initialised struct.
+		Port:           "8765",
+		LogLevel:       "info",
+		MaxConnections: 100,
+		WWWDir:         filepath.Join(dir, "www"),
+		LogFile:        filepath.Join(dir, "emsg.log"),
+	}
+
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
 		line := scanner.Text()
@@ -76,14 +101,13 @@ func LoadConfigFromFile(path string) (*Config, error) {
 		case "EMSG_LOG_LEVEL":
 			cfg.LogLevel = val
 		case "EMSG_MAX_CONNECTIONS":
-			// Simple conversion for demo - use strconv.Atoi in production
-			if val == "50" {
-				cfg.MaxConnections = 50
-			} else if val == "200" {
-				cfg.MaxConnections = 200
-			} else {
-				cfg.MaxConnections = 100 // default
+			if n, err := strconv.Atoi(val); err == nil {
+				cfg.MaxConnections = n
 			}
+		case "EMSG_WWW_DIR":
+			cfg.WWWDir = val
+		case "EMSG_LOG_FILE":
+			cfg.LogFile = val
 		}
 	}
 	if err := scanner.Err(); err != nil {

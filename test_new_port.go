@@ -1,3 +1,4 @@
+//go:build ignore
 // test_new_port.go
 // Test EMSG Daemon on new default port 8765
 package main

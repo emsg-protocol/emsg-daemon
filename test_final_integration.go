@@ -1,3 +1,4 @@
+//go:build ignore
 // test_final_integration.go
 // Final integration test for EMSG Daemon with custom configuration
 package main

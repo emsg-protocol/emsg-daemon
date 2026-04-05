@@ -1,3 +1,4 @@
+//go:build ignore
 // test_final_routing.go
 // Final test of EMSG routing for sandipwalke.com
 package main

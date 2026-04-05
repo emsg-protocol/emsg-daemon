@@ -1,3 +1,4 @@
+//go:build ignore
 // debug_storage.go
 // Debug script to test BoltDB storage directly
 package main

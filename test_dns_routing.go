@@ -1,3 +1,4 @@
+//go:build ignore
 // test_dns_routing.go
 // Test DNS routing functionality
 package main

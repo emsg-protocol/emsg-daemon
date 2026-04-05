@@ -1,3 +1,4 @@
+//go:build ignore
 // test_api.go
 // Test script for EMSG Daemon API endpoints
 package main
